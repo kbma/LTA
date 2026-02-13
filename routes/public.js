@@ -1,18 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { createWrapper } = require('../services/database');
+const db = require('../services/database');
 const hotelService = require('../services/hotelService');
-
-let db = null;
-
-async function getDb() {
-  if (!db) {
-    const { initDatabase, createWrapper: createDbWrapper } = require('../services/database');
-    await initDatabase();
-    db = createDbWrapper();
-  }
-  return db;
-}
 
 // Page d'entrée du code de réduction
 router.get('/enter-code', (req, res) => {
@@ -27,21 +16,29 @@ router.post('/validate-code', async (req, res) => {
     return res.render('enter-code', { error: 'Veuillez entrer un code de réduction' });
   }
 
-  const dbWrapper = await getDb();
+  // Logic: Join manually
+  const codes = await db.getAll('discount_codes');
+  const conventions = await db.getAll('conventions');
 
-  // Vérifier le code dans la base de données
-  const stmt = dbWrapper.prepare(`
-    SELECT dc.*, c.name as convention_name, c.discount_percentage
-    FROM discount_codes dc
-    JOIN conventions c ON dc.convention_id = c.id
-    WHERE dc.code = ? AND dc.is_active = 1 AND c.is_active = 1
-  `);
-
-  const codeData = await stmt.get(code.toUpperCase());
-
-  if (!codeData) {
+  const discountCode = codes.find(d => d.code === code.toUpperCase() && d.is_active == 1);
+  
+  if (!discountCode) {
     return res.render('enter-code', { error: 'Code invalide ou expiré' });
   }
+
+  const convention = conventions.find(c => c.id == discountCode.convention_id && c.is_active == 1);
+
+  if (!convention) {
+    // Code exists but convention is inactive or deleted
+    return res.render('enter-code', { error: 'Code invalide (Convention inactive)' });
+  }
+
+  // Merge data for valid check
+  const codeData = {
+    ...discountCode,
+    convention_name: convention.name,
+    discount_percentage: convention.discount_percentage
+  };
 
   // Vérifier la date de validité
   const now = new Date();
@@ -70,8 +67,6 @@ router.get('/offers', async (req, res) => {
   }
 
   try {
-    const dbWrapper = await getDb();
-    
     // Récupérer les paramètres de filtrage
     const { destination, checkIn, checkOut, adults, rooms, stars, priceMin, priceMax } = req.query;
     
@@ -106,33 +101,28 @@ router.get('/offers', async (req, res) => {
     }
 
     // Récupérer la marge globale
-    const marginStmt = dbWrapper.prepare(`
-      SELECT * FROM margins WHERE margin_type = 'global' AND is_active = 1 LIMIT 1
-    `);
-    const globalMargin = (await marginStmt.get()) || { margin_value: 0, margin_unit: 'percentage' };
+    const globalMargin = await db.findOne('margins', m => m.margin_type === 'global' && m.is_active == 1) 
+                         || { margin_value: 0, margin_unit: 'percentage' };
 
-      // Récupérer la convention pour valider les dates
-      const conventionStmt = dbWrapper.prepare(`
-        SELECT * FROM conventions WHERE id = ?
-      `);
-      const convention = await conventionStmt.get(req.session.conventionId);
+    // Récupérer la convention pour valider les dates
+    const convention = await db.findOne('conventions', c => c.id == req.session.conventionId);
 
-      // Vérifier si la réduction est valide (dates)
-      const now = new Date();
-      const isDiscountValid = !convention || (
+    // Vérifier si la réduction est valide (dates)
+    const now = new Date();
+    const isDiscountValid = !convention || (
         (!convention.valid_from || new Date(convention.valid_from) <= now) &&
         (!convention.valid_until || new Date(convention.valid_until) >= now) &&
-        convention.is_active === 1
-      );
+        convention.is_active == 1
+    );
 
-      // Vérifier si la marge globale est valide (dates)
-      const isGlobalMarginValid = !globalMargin.margin_value || (
+    // Vérifier si la marge globale est valide (dates)
+    const isGlobalMarginValid = !globalMargin.margin_value || (
         (!globalMargin.valid_from || new Date(globalMargin.valid_from) <= now) &&
         (!globalMargin.valid_until || new Date(globalMargin.valid_until) >= now)
-      );
+    );
 
-      // Appliquer les marges et réductions
-      const processedHotels = filteredHotels.map(hotel => {
+    // Appliquer les marges et réductions
+    const processedHotels = filteredHotels.map(hotel => {
         return {
           ...hotel,
           rooms: hotel.rooms.map(room => {
@@ -162,7 +152,7 @@ router.get('/offers', async (req, res) => {
             };
           })
         };
-      });
+    });
 
     res.render('offers', {
       hotels: processedHotels,
@@ -180,6 +170,7 @@ router.get('/offers', async (req, res) => {
         priceMax: priceMax || ''
       }
     });
+
   } catch (error) {
     console.error('Erreur lors de la récupération des offres:', error);
     const { destination, checkIn, checkOut, adults, rooms } = req.query;
@@ -208,7 +199,6 @@ router.get('/hotel/:id', async (req, res) => {
   }
 
   try {
-    const dbWrapper = await getDb();
     const hotelId = req.params.id;
     
     // Récupérer l'hôtel
@@ -225,10 +215,8 @@ router.get('/hotel/:id', async (req, res) => {
     }
 
     // Récupérer la marge globale
-    const marginStmt = dbWrapper.prepare(`
-      SELECT * FROM margins WHERE margin_type = 'global' AND is_active = 1 LIMIT 1
-    `);
-    const globalMargin = (await marginStmt.get()) || { margin_value: 0, margin_unit: 'percentage' };
+    const globalMargin = await db.findOne('margins', m => m.margin_type === 'global' && m.is_active == 1) 
+                         || { margin_value: 0, margin_unit: 'percentage' };
 
     // Vérifier si la marge globale est valide (dates)
     const now = new Date();
@@ -237,17 +225,14 @@ router.get('/hotel/:id', async (req, res) => {
       (!globalMargin.valid_until || new Date(globalMargin.valid_until) >= now)
     );
 
-    // Récupérer la convention pour valider les dates
-    const conventionStmt = dbWrapper.prepare(`
-      SELECT * FROM conventions WHERE id = ?
-    `);
-    const convention = await conventionStmt.get(req.session.conventionId);
+    // Récupérer la convention
+    const convention = await db.findOne('conventions', c => c.id == req.session.conventionId);
 
     // Vérifier si la réduction est valide (dates)
     const isDiscountValid = !convention || (
       (!convention.valid_from || new Date(convention.valid_from) <= now) &&
       (!convention.valid_until || new Date(convention.valid_until) >= now) &&
-      convention.is_active === 1
+      convention.is_active == 1
     );
 
     // Appliquer les marges et réductions aux chambres

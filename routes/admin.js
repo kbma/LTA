@@ -2,18 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 require('dotenv').config();
-const { createWrapper } = require('../services/database');
-
-let db = null;
-
-async function getDb() {
-  if (!db) {
-    const { initDatabase, createWrapper: createDbWrapper } = require('../services/database');
-    await initDatabase();
-    db = createDbWrapper();
-  }
-  return db;
-}
+const db = require('../services/database');
 
 // Middleware pour vérifier l'authentification
 function requireAuth(req, res, next) {
@@ -35,10 +24,9 @@ router.get('/login', (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const dbWrapper = await getDb();
-
-    const stmt = dbWrapper.prepare('SELECT * FROM admins WHERE username = ?');
-    const admin = await stmt.get(username);
+    
+    // Find admin by username
+    const admin = await db.findOne('admins', u => u.username === username);
 
     if (!admin || !bcrypt.compareSync(password, admin.password)) {
       return res.render('admin/login', { error: 'Identifiants incorrects' });
@@ -49,7 +37,7 @@ router.post('/login', async (req, res) => {
     res.redirect('/admin/dashboard');
   } catch (error) {
     console.error('Login error:', error);
-    res.render('admin/login', { error: 'Erreur de connexion base de données: ' + error.message });
+    res.render('admin/login', { error: 'Erreur: ' + error.message });
   }
 });
 
@@ -61,17 +49,16 @@ router.get('/logout', (req, res) => {
 
 // Dashboard
 router.get('/dashboard', requireAuth, async (req, res) => {
-  const dbWrapper = await getDb();
-  const statsConventions = await dbWrapper.prepare('SELECT COUNT(*) as count FROM conventions').get();
-  const statsCodes = await dbWrapper.prepare('SELECT COUNT(*) as count FROM discount_codes').get();
-  const statsActiveCodes = await dbWrapper.prepare('SELECT COUNT(*) as count FROM discount_codes WHERE is_active = 1').get();
+  const conventions = await db.getAll('conventions');
+  const codes = await db.getAll('discount_codes');
+  const activeCodes = codes.filter(c => c.is_active == 1);
 
   res.render('admin/dashboard', {
     adminUsername: req.session.adminUsername,
     stats: {
-      conventions: statsConventions.count,
-      codes: statsCodes.count,
-      activeCodes: statsActiveCodes.count
+      conventions: conventions.length,
+      codes: codes.length,
+      activeCodes: activeCodes.length
     }
   });
 });
@@ -80,9 +67,10 @@ router.get('/dashboard', requireAuth, async (req, res) => {
 
 // Liste des conventions
 router.get('/conventions', requireAuth, async (req, res) => {
-  const dbWrapper = await getDb();
-  const stmt = dbWrapper.prepare('SELECT * FROM conventions ORDER BY created_at DESC');
-  const conventions = await stmt.all();
+  let conventions = await db.getAll('conventions');
+  // Sort by created_at DESC
+  conventions.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
   res.render('admin/conventions', { 
     conventions,
     adminUsername: req.session.adminUsername
@@ -92,15 +80,15 @@ router.get('/conventions', requireAuth, async (req, res) => {
 // Ajouter une convention
 router.post('/conventions/add', requireAuth, async (req, res) => {
   const { name, discount_percentage, valid_from, valid_until } = req.body;
-  const dbWrapper = await getDb();
-
-  const stmt = dbWrapper.prepare(`
-    INSERT INTO conventions (name, discount_percentage, valid_from, valid_until) 
-    VALUES (?, ?, ?, ?)
-  `);
 
   try {
-    await stmt.run(name, discount_percentage, valid_from || null, valid_until || null);
+    await db.insert('conventions', {
+      name,
+      discount_percentage,
+      is_active: 1,
+      valid_from: valid_from || null,
+      valid_until: valid_until || null
+    });
     res.redirect('/admin/conventions');
   } catch (error) {
     console.error('Erreur lors de l\'ajout:', error);
@@ -111,23 +99,21 @@ router.post('/conventions/add', requireAuth, async (req, res) => {
 // Modifier une convention
 router.post('/conventions/edit/:id', requireAuth, async (req, res) => {
   const { name, discount_percentage, is_active, valid_from, valid_until } = req.body;
-  const dbWrapper = await getDb();
+  
+  await db.update('conventions', req.params.id, {
+    name,
+    discount_percentage,
+    is_active: is_active ? 1 : 0,
+    valid_from: valid_from || null,
+    valid_until: valid_until || null
+  });
 
-  const stmt = dbWrapper.prepare(`
-    UPDATE conventions 
-    SET name = ?, discount_percentage = ?, is_active = ?, valid_from = ?, valid_until = ?
-    WHERE id = ?
-  `);
-
-  await stmt.run(name, discount_percentage, is_active ? 1 : 0, valid_from || null, valid_until || null, req.params.id);
   res.redirect('/admin/conventions');
 });
 
 // Supprimer une convention
 router.post('/conventions/delete/:id', requireAuth, async (req, res) => {
-  const dbWrapper = await getDb();
-  const stmt = dbWrapper.prepare('DELETE FROM conventions WHERE id = ?');
-  await stmt.run(req.params.id);
+  await db.delete('conventions', req.params.id);
   res.redirect('/admin/conventions');
 });
 
@@ -135,21 +121,24 @@ router.post('/conventions/delete/:id', requireAuth, async (req, res) => {
 
 // Liste des codes
 router.get('/codes', requireAuth, async (req, res) => {
-  const dbWrapper = await getDb();
-  const stmt = dbWrapper.prepare(`
-    SELECT dc.*, c.name as convention_name 
-    FROM discount_codes dc
-    JOIN conventions c ON dc.convention_id = c.id
-    ORDER BY dc.created_at DESC
-  `);
-  const codes = await stmt.all();
+  let codes = await db.getAll('discount_codes');
+  const conventions = await db.getAll('conventions');
 
-  const conventionsStmt = dbWrapper.prepare('SELECT * FROM conventions WHERE is_active = 1');
-  const conventions = await conventionsStmt.all();
+  // Join manually to get convention names
+  codes = codes.map(code => {
+    const conv = conventions.find(c => c.id == code.convention_id);
+    return {
+      ...code,
+      convention_name: conv ? conv.name : 'Inconnu'
+    };
+  });
+
+  // Sort
+  codes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   res.render('admin/codes', { 
     codes,
-    conventions,
+    conventions: conventions.filter(c => c.is_active == 1),
     adminUsername: req.session.adminUsername
   });
 });
@@ -157,15 +146,15 @@ router.get('/codes', requireAuth, async (req, res) => {
 // Ajouter un code
 router.post('/codes/add', requireAuth, async (req, res) => {
   const { code, convention_id, valid_from, valid_until } = req.body;
-  const dbWrapper = await getDb();
-
-  const stmt = dbWrapper.prepare(`
-    INSERT INTO discount_codes (code, convention_id, valid_from, valid_until) 
-    VALUES (?, ?, ?, ?)
-  `);
 
   try {
-    await stmt.run(code.toUpperCase(), convention_id, valid_from || null, valid_until || null);
+    await db.insert('discount_codes', {
+      code: code.toUpperCase(),
+      convention_id,
+      is_active: 1,
+      valid_from: valid_from || null,
+      valid_until: valid_until || null
+    });
     res.redirect('/admin/codes');
   } catch (error) {
     console.error('Erreur lors de l\'ajout:', error);
@@ -176,23 +165,21 @@ router.post('/codes/add', requireAuth, async (req, res) => {
 // Modifier un code
 router.post('/codes/edit/:id', requireAuth, async (req, res) => {
   const { code, convention_id, is_active, valid_from, valid_until } = req.body;
-  const dbWrapper = await getDb();
 
-  const stmt = dbWrapper.prepare(`
-    UPDATE discount_codes 
-    SET code = ?, convention_id = ?, is_active = ?, valid_from = ?, valid_until = ?
-    WHERE id = ?
-  `);
+  await db.update('discount_codes', req.params.id, {
+    code: code.toUpperCase(),
+    convention_id,
+    is_active: is_active ? 1 : 0,
+    valid_from: valid_from || null,
+    valid_until: valid_until || null
+  });
 
-  await stmt.run(code.toUpperCase(), convention_id, is_active ? 1 : 0, valid_from || null, valid_until || null, req.params.id);
   res.redirect('/admin/codes');
 });
 
 // Supprimer un code
 router.post('/codes/delete/:id', requireAuth, async (req, res) => {
-  const dbWrapper = await getDb();
-  const stmt = dbWrapper.prepare('DELETE FROM discount_codes WHERE id = ?');
-  await stmt.run(req.params.id);
+  await db.delete('discount_codes', req.params.id);
   res.redirect('/admin/codes');
 });
 
@@ -200,9 +187,9 @@ router.post('/codes/delete/:id', requireAuth, async (req, res) => {
 
 // Liste des marges
 router.get('/margins', requireAuth, async (req, res) => {
-  const dbWrapper = await getDb();
-  const stmt = dbWrapper.prepare('SELECT * FROM margins ORDER BY margin_type, created_at DESC');
-  const margins = await stmt.all();
+  let margins = await db.getAll('margins');
+  // Sort by margin_type then created_at
+  margins.sort((a,b) => (a.margin_type > b.margin_type) ? 1 : -1);
 
   res.render('admin/margins', { 
     margins,
@@ -213,29 +200,33 @@ router.get('/margins', requireAuth, async (req, res) => {
 // Ajouter/Modifier une marge
 router.post('/margins/save', requireAuth, async (req, res) => {
   const { margin_type, entity_id, margin_value, margin_unit, valid_from, valid_until, is_active } = req.body;
-  const dbWrapper = await getDb();
 
-  // Vérifier si une marge existe déjà pour ce type et entité
-  let stmt = dbWrapper.prepare(`
-    SELECT * FROM margins WHERE margin_type = ? AND (entity_id = ? OR (entity_id IS NULL AND ? IS NULL))
-  `);
-  const existing = await stmt.get(margin_type, entity_id || null, entity_id || null);
+  // Check if existing margin (global or specific)
+  const existing = await db.findOne('margins', m => 
+    m.margin_type === margin_type && 
+    (m.entity_id == entity_id || (!m.entity_id && !entity_id))
+  );
 
   if (existing) {
-    // Mettre à jour
-    stmt = dbWrapper.prepare(`
-      UPDATE margins 
-      SET margin_value = ?, margin_unit = ?, valid_from = ?, valid_until = ?, is_active = ?
-      WHERE id = ?
-    `);
-    await stmt.run(margin_value, margin_unit, valid_from || null, valid_until || null, is_active ? 1 : 0, existing.id);
+    // Update
+    await db.update('margins', existing.id, {
+      margin_value,
+      margin_unit,
+      valid_from: valid_from || null,
+      valid_until: valid_until || null,
+      is_active: is_active ? 1 : 0
+    });
   } else {
-    // Créer
-    stmt = dbWrapper.prepare(`
-      INSERT INTO margins (margin_type, entity_id, margin_value, margin_unit, valid_from, valid_until, is_active) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    await stmt.run(margin_type, entity_id || null, margin_value, margin_unit, valid_from || null, valid_until || null, is_active ? 1 : 0);
+    // Create
+    await db.insert('margins', {
+      margin_type,
+      entity_id: entity_id || null,
+      margin_value,
+      margin_unit,
+      valid_from: valid_from || null,
+      valid_until: valid_until || null,
+      is_active: is_active ? 1 : 0
+    });
   }
 
   res.redirect('/admin/margins');
@@ -243,9 +234,7 @@ router.post('/margins/save', requireAuth, async (req, res) => {
 
 // Supprimer une marge
 router.post('/margins/delete/:id', requireAuth, async (req, res) => {
-  const dbWrapper = await getDb();
-  const stmt = dbWrapper.prepare('DELETE FROM margins WHERE id = ?');
-  await stmt.run(req.params.id);
+  await db.delete('margins', req.params.id);
   res.redirect('/admin/margins');
 });
 

@@ -30,8 +30,8 @@ app.use(session({
   }
 }));
 
-// Initialize database (Lazy loaded in services, but we can verify params here if needed)
-const { initDatabase } = require('./services/database');
+// Initialize database (Optional check)
+// const db = require('./services/database'); 
 
 // Routes
 const publicRoutes = require('./routes/public');
@@ -55,14 +55,9 @@ module.exports = app;
 
 // For local development: Start server
 if (require.main === module) {
-  // Initialize DB explicitly for local logging
-  initDatabase().then(() => {
-     app.listen(PORT, () => {
-        console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
-        console.log(`📊 Admin: http://localhost:${PORT}/admin/login`);
-        console.log(`🔑 Code d'accès: http://localhost:${PORT}/enter-code`);
-      });
-  }).catch(err => {
-      console.error('Failed to initialize database', err);
+  app.listen(PORT, () => {
+    console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
+    console.log(`📊 Admin: http://localhost:${PORT}/admin/login`);
+    console.log(`🔑 Code d'accès: http://localhost:${PORT}/enter-code`);
   });
 }

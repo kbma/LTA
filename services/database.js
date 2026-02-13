@@ -1,177 +1,82 @@
-const fs = require('fs');
-const path = require('path');
+const { kv } = require('@vercel/kv');
 require('dotenv').config();
 
-// Determine if we are using Postgres (Vercel) or local SQLite
-// Neon and other providers might use DATABASE_URL
-const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
-const isPostgres = !!connectionString;
+// Simple in-memory cache to avoid fetching from Redis on every single micro-op
+// In a serverless environment (Vercel), this cache is per-request/execution.
+// We must fetch from KV at start of request and save at end (or immediately).
 
-let dbInstance = null;
-let sqlJs = null;
+class JsonDB {
+  constructor() {
+    this.dummyData = {
+      admins: [],
+      conventions: [],
+      discount_codes: [],
+      margins: []
+    };
+  }
 
-const DB_PATH = process.env.DB_PATH || './database.db';
-
-// Helper to convert '?' params to '$1', '$2' etc for Postgres
-function convertQueryToPostgres(sql) {
-  let i = 1;
-  return sql.replace(/\?/g, () => `$${i++}`);
-}
-
-async function initDatabase() {
-  if (dbInstance) return dbInstance;
-
-  if (isPostgres) {
-    const { Pool } = require('pg');
-    dbInstance = new Pool({
-      connectionString: connectionString,
-      ssl: {
-        rejectUnauthorized: false
-      }
-    });
-
-    // Test connection
-    try {
-      const client = await dbInstance.connect();
-      client.release();
-      console.log('✅ Connected to Postgres Database');
-    } catch (err) {
-      console.error('❌ Failed to connect to Postgres:', err);
-      throw err;
+  async getAll(collection) {
+    // If running locally without KV or env vars, fallback to memory (lost on restart)
+    if (!process.env.KV_REST_API_URL) {
+      console.warn('⚠️ KV_REST_API_URL missing. Using in-memory volatile storage.');
+      return this.dummyData[collection] || [];
     }
-    return dbInstance;
-  } else {
-    // Local SQLite (sql.js)
-    const initSqlJs = require('sql.js');
-    sqlJs = await initSqlJs();
+    const data = await kv.get(collection);
+    return data || [];
+  }
 
-    if (fs.existsSync(DB_PATH)) {
-      const fileBuffer = fs.readFileSync(DB_PATH);
-      dbInstance = new sqlJs.Database(fileBuffer);
-    } else {
-      dbInstance = new sqlJs.Database();
+  async saveAll(collection, data) {
+    if (!process.env.KV_REST_API_URL) {
+      this.dummyData[collection] = data;
+      return;
     }
-    
-    // Add columns if missing (Simple migration logic for local)
-    try {
-        dbInstance.run("ALTER TABLE margins ADD COLUMN valid_from DATE");
-    } catch(e) {}
-    try {
-        dbInstance.run("ALTER TABLE margins ADD COLUMN valid_until DATE");
-    } catch(e) {}
-    try {
-        dbInstance.run("ALTER TABLE margins ADD COLUMN is_active INTEGER DEFAULT 1");
-    } catch(e) {}
+    await kv.set(collection, data);
+  }
 
-    saveDatabase(); // Initial save
-    return dbInstance;
+  // Helpers to simulate SQL-like operations
+  async findOne(collection, predicate) {
+    const list = await this.getAll(collection);
+    return list.find(predicate);
+  }
+
+  async find(collection, predicate) {
+    const list = await this.getAll(collection);
+    return predicate ? list.filter(predicate) : list;
+  }
+
+  async insert(collection, item) {
+    const list = await this.getAll(collection);
+    // Auto-increment ID simulation
+    const maxId = list.reduce((max, i) => (i.id > max ? i.id : max), 0);
+    const newItem = { ...item, id: maxId + 1, created_at: new Date().toISOString() };
+    list.push(newItem);
+    await this.saveAll(collection, list);
+    return newItem; // Return new item with ID
+  }
+
+  async update(collection, id, updates) {
+    const list = await this.getAll(collection);
+    const index = list.findIndex(i => i.id == id); // Loose equality for string/number id mismatch
+    if (index !== -1) {
+      list[index] = { ...list[index], ...updates };
+      await this.saveAll(collection, list);
+      return list[index];
+    }
+    return null;
+  }
+
+  async delete(collection, id) {
+    let list = await this.getAll(collection);
+    const initialLen = list.length;
+    list = list.filter(i => i.id != id);
+    if (list.length !== initialLen) {
+      await this.saveAll(collection, list);
+      return true;
+    }
+    return false;
   }
 }
 
-// Wrapper to unify API (Async for everything)
-async function run(sql, params = []) {
-    if (!dbInstance) await initDatabase();
+const db = new JsonDB();
 
-    if (isPostgres) {
-        const pSql = convertQueryToPostgres(sql);
-        await dbInstance.query(pSql, params);
-    } else {
-        dbInstance.run(sql, params);
-        saveDatabase();
-    }
-}
-
-async function get(sql, params = []) {
-    if (!dbInstance) await initDatabase();
-
-    if (isPostgres) {
-        const pSql = convertQueryToPostgres(sql);
-        const res = await dbInstance.query(pSql, params);
-        return res.rows[0];
-    } else {
-        const stmt = dbInstance.prepare(sql);
-        stmt.bind(params);
-        let row;
-        if (stmt.step()) {
-            row = stmt.getAsObject();
-        }
-        stmt.free();
-        return row;
-    }
-}
-
-async function all(sql, params = []) {
-    if (!dbInstance) await initDatabase();
-
-    if (isPostgres) {
-        const pSql = convertQueryToPostgres(sql);
-        const res = await dbInstance.query(pSql, params);
-        return res.rows;
-    } else {
-        const stmt = dbInstance.prepare(sql);
-        stmt.bind(params);
-        const results = [];
-        while (stmt.step()) {
-            results.push(stmt.getAsObject());
-        }
-        stmt.free();
-        return results;
-    }
-}
-
-function saveDatabase() {
-    if (isPostgres) return; // Autosave
-    if (!dbInstance) return;
-    try {
-        const data = dbInstance.export();
-        const buffer = Buffer.from(data);
-        fs.writeFileSync(DB_PATH, buffer);
-    } catch (err) {
-        console.error("Failed to save database:", err);
-    }
-}
-
-function close() {
-    if (isPostgres) {
-        if (dbInstance) dbInstance.end();
-    } else {
-        if (dbInstance) {
-            saveDatabase();
-            dbInstance.close();
-        }
-    }
-    dbInstance = null;
-}
-
-// Factory for backward compatibility but ASYNC wrapper
-function createWrapper() {
-  return {
-    async exec(sql) {
-        if (isPostgres) {
-             await dbInstance.query(sql);
-        } else {
-             dbInstance.exec(sql);
-             saveDatabase();
-        }
-    },
-    prepare(sql) {
-      // Return an object that has async methods
-      return {
-        run: async (...params) => run(sql, params),
-        get: async (...params) => get(sql, params),
-        all: async (...params) => all(sql, params)
-      };
-    }
-  };
-}
-
-module.exports = {
-  initDatabase,
-  run,
-  get,
-  all,
-  saveDatabase,
-  close,
-  createWrapper,
-  isPostgres
-};
+module.exports = db;
