@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nos offres hôtelières - HotelDiscount</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .convention-info {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.5);
+            padding: 6px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #1a73e8;
+        }
+
+        /* Main Layout */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Discount Banner */
+        .discount-banner {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+        }
+
+        .discount-banner h2 {
+            font-size: 20px;
+        }
+
+        .discount-badge {
+            background: white;
+            color: #ee5a24;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* Content Layout */
+        .content-wrapper {
+            display: flex;
+            gap: 25px;
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        .search-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+        }
+
+        /* Filter Section */
+        .filter-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .filter-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .filter-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .star-filter {
+            display: flex;
+            gap: 8px;
+        }
+
+        .star-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .star-btn:hover,
+        .star-btn.active {
+            border-color: #1a73e8;
+            background: #1a73e8;
+            color: white;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .filter-option:hover {
+            color: #1a73e8;
+        }
+
+        .filter-count {
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* Right Content */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-count {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* Hotels Grid */
+        .hotels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .hotel-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .hotel-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .hotel-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .hotel-content {
+            padding: 18px;
+        }
+
+        .hotel-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .hotel-stars {
+            color: #ffc107;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .hotel-location {
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .hotel-amenities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .amenity-tag {
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .hotel-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .price-info {
+            flex: 1;
+        }
+
+        .original-price {
+            color: #999;
+            text-decoration: line-through;
+            font-size: 13px;
+        }
+
+        .final-price {
+            color: #1a73e8;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .price-per-night {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .discount-tag {
+            background: #fff3e0;
+            color: #f57c00;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .view-btn {
+            display: block;
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            color: #1a73e8;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .view-btn:hover {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .hotel-image-container {
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .gallery-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 8px;
+            border-radius: 50%;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .hotel-image-container:hover .gallery-icon {
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                display: flex;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+
+            .sidebar-card {
+                flex: 1;
+                min-width: 250px;
+                margin-bottom: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .hotels-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .discount-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>🏨 HotelDiscount</h1>
+                <div class="convention-info">
+                    📋 <%= conventionName %> | 🎫 <%= discountCode %>
+                </div>
+            </div>
+            <a href="/logout" class="logout-btn">Se déconnecter</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Banner -->
+        <div class="discount-banner">
+            <h2>🎉 Votre réduction exclusive</h2>
+            <div class="discount-badge"><%= discountPercentage %>% OFF</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content-wrapper">
+            <!-- Left Sidebar -->
+            <div class="sidebar">
+                <!-- Search Card -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">🔍 Rechercher</h3>
+                    <form action="/offers" method="GET">
+                        <div class="form-group">
+                            <label>📍 Destination</label>
+                            <input type="text" name="destination" placeholder="Ville ou hôtel..." value="<%= typeof filters !== 'undefined' ? (filters.destination || '') : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label>📅 Arrivée</label>
+                            <input type="date" name="checkIn" value="<%= typeof filters !== 'undefined' ? (filters.checkIn || '') : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label>📅 Départ</label>
+                            <input type="date" name="checkOut" value="<%= typeof filters !== 'undefined' ? (filters.checkOut || '') : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label>👥 Adultes</label>
+                            <select name="adults">
+                                <option value="1" <%= typeof filters !== 'undefined' && filters.adults == 1 ? 'selected' : '' %>>1 Adulte</option>
+                                <option value="2" <%= typeof filters !== 'undefined' && filters.adults == 2 ? 'selected' : '' %>>2 Adultes</option>
+                                <option value="3" <%= typeof filters !== 'undefined' && filters.adults == 3 ? 'selected' : '' %>>3 Adultes</option>
+                                <option value="4" <%= typeof filters !== 'undefined' && filters.adults == 4 ? 'selected' : '' %>>4 Adultes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>🚪 Chambres</label>
+                            <select name="rooms">
+                                <option value="1" <%= typeof filters !== 'undefined' && filters.rooms == 1 ? 'selected' : '' %>>1 Chambre</option>
+                                <option value="2" <%= typeof filters !== 'undefined' && filters.rooms == 2 ? 'selected' : '' %>>2 Chambres</option>
+                                <option value="3" <%= typeof filters !== 'undefined' && filters.rooms == 3 ? 'selected' : '' %>>3 Chambres</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="search-btn">Rechercher</button>
+                    </form>
+                </div>
+
+                <!-- Filters Card -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Filtres</h3>
+                    
+                    <div class="filter-section">
+                        <h4 class="filter-title">⭐ Catégorie</h4>
+                        <div class="star-filter">
+                            <button type="button" class="star-btn" onclick="filterByStars(5)">5★</button>
+                            <button type="button" class="star-btn" onclick="filterByStars(4)">4★</button>
+                            <button type="button" class="star-btn" onclick="filterByStars(3)">3★</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-section">
+                        <h4 class="filter-title">🏨 Équipements</h4>
+                        <div class="filter-option">
+                            <span>Piscine</span>
+                            <span class="filter-count">3</span>
+                        </div>
+                        <div class="filter-option">
+                            <span>WiFi gratuit</span>
+                            <span class="filter-count">6</span>
+                        </div>
+                        <div class="filter-option">
+                            <span>Parking</span>
+                            <span class="filter-count">5</span>
+                        </div>
+                        <div class="filter-option">
+                            <span>Spa</span>
+                            <span class="filter-count">2</span>
+                        </div>
+                    </div>
+
+                    <div class="filter-section">
+                        <h4 class="filter-title">💰 Budget/nuit</h4>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" placeholder="Min DT" style="width: 50%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px;">
+                            <input type="number" placeholder="Max DT" style="width: 50%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="results-header">
+                    <p class="results-count"><%= hotels ? hotels.length : 0 %> hôtels trouvés</p>
+                </div>
+
+                <% if (hotels && hotels.length > 0) { %>
+                    <div class="hotels-grid">
+                        <% hotels.forEach(hotel => { %>
+                            <a href="/hotel/<%= hotel.id %>" class="hotel-card">
+                                <div class="hotel-image-container" onclick="openGallery(<%= hotel.id %>, '<%= hotel.image %>', event)">
+                                    <img src="<%= hotel.image %>" alt="<%= hotel.name %>" class="hotel-image" onerror="this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400'">
+                                    <div class="gallery-icon">📷</div>
+                                </div>
+                                <div class="hotel-content">
+                                    <h3 class="hotel-name"><%= hotel.name %></h3>
+                                    <div class="hotel-stars">
+                                        <% for(let i = 0; i < hotel.stars; i++) { %>⭐<% } %>
+                                    </div>
+                                    <p class="hotel-location">📍 <%= hotel.address %></p>
+                                    <div class="hotel-amenities">
+                                        <% if (hotel.rooms && hotel.rooms[0]) { %>
+                                            <% hotel.rooms[0].amenities.slice(0, 3).forEach(amenity => { %>
+                                                <span class="amenity-tag"><%= amenity.substring(0, 10) %></span>
+                                            <% }); %>
+                                        <% } %>
+                                    </div>
+                                    <div class="hotel-footer">
+                                        <div class="price-info">
+                                            <% const minPrice = hotel.rooms ? Math.min(...hotel.rooms.map(r => r.originalPrice || r.price)) : 0; %>
+                                            <% const finalMinPrice = hotel.rooms ? Math.min(...hotel.rooms.map(r => r.finalPrice || r.price)) : 0; %>
+                                            <% if (minPrice > finalMinPrice) { %>
+                                                <div class="original-price"><%= minPrice.toFixed(0) %> DT</div>
+                                            <% } %>
+                                            <div class="final-price"><%= finalMinPrice.toFixed(0) %> DT</div>
+                                            <div class="price-per-night">par nuit</div>
+                                        </div>
+                                        <span class="discount-tag">-<%= discountPercentage %>%</span>
+                                    </div>
+                                </div>
+                                <div class="view-btn" onclick="window.location.href='tel:26388202'">📞 26 388 202</div>
+                            </a>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <div style="text-align: center; padding: 60px 20px; background: white; border-radius: 12px;">
+                        <h2 style="color: #1a73e8; margin-bottom: 15px;">🔍 Aucun hôtel trouvé</h2>
+                        <p style="color: #666;">Essayez de modifier vos critères de recherche</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Photo Gallery Modal
+        let currentGalleryImages = [];
+        let currentImageIndex = 0;
+
+        function openGallery(hotelId, imageUrl, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Find the hotel data
+            const hotel = hotelsData.find(h => h.id === hotelId);
+            if (hotel && hotel.gallery) {
+                currentGalleryImages = hotel.gallery;
+            } else {
+                currentGalleryImages = [imageUrl];
+            }
+            currentImageIndex = currentGalleryImages.indexOf(imageUrl);
+            if (currentImageIndex === -1) currentImageIndex = 0;
+            
+            document.getElementById('gallery-modal').style.display = 'flex';
+            updateGalleryImage();
+        }
+
+        function closeGallery() {
+            document.getElementById('gallery-modal').style.display = 'none';
+        }
+
+        function updateGalleryImage() {
+            document.getElementById('gallery-image').src = currentGalleryImages[currentImageIndex];
+            document.getElementById('gallery-counter').textContent = `${currentImageIndex + 1} / ${currentGalleryImages.length}`;
+        }
+
+        function prevImage() {
+            currentImageIndex = (currentImageIndex - 1 + currentGalleryImages.length) % currentGalleryImages.length;
+            updateGalleryImage();
+        }
+
+        function nextImage() {
+            currentImageIndex = (currentImageIndex + 1) % currentGalleryImages.length;
+            updateGalleryImage();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('gallery-modal').style.display === 'flex') {
+                if (e.key === 'ArrowLeft') prevImage();
+                if (e.key === 'ArrowRight') nextImage();
+                if (e.key === 'Escape') closeGallery();
+            }
+        });
+
+        // Hotels data for gallery
+        const hotelsData = <%- JSON.stringify(hotels.map(h => ({ id: h.id, gallery: h.gallery || [h.image] }))) %>;
+
+        function filterByStars(stars) {
+            document.querySelectorAll('.star-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            let starsFilter = document.querySelector('input[name="stars"]');
+            if (!starsFilter) {
+                starsFilter = document.createElement('input');
+                starsFilter.type = 'hidden';
+                starsFilter.name = 'stars';
+                document.querySelector('form').appendChild(starsFilter);
+            }
+            starsFilter.value = stars;
+            document.querySelector('form').submit();
+        }
+    </script>
+
+    <!-- Photo Gallery Modal -->
+    <div id="gallery-modal" class="gallery-modal" onclick="closeGallery()">
+        <div class="gallery-content" onclick="event.stopPropagation()">
+            <button class="gallery-close" onclick="closeGallery()">&times;</button>
+            <button class="gallery-nav gallery-prev" onclick="prevImage()">&#10094;</button>
+            <img id="gallery-image" src="" alt="Hotel Image">
+            <button class="gallery-nav gallery-next" onclick="nextImage()">&#10095;</button>
+            <div class="gallery-counter" id="gallery-counter"></div>
+        </div>
+    </div>
+
+    <style>
+        .gallery-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .gallery-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .gallery-content img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+        }
+
+        .gallery-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            z-index: 10001;
+        }
+
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 30px;
+            padding: 15px 20px;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .gallery-nav:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .gallery-prev {
+            left: -70px;
+        }
+
+        .gallery-next {
+            right: -70px;
+        }
+
+        .gallery-counter {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .gallery-prev {
+                left: 10px;
+            }
+            .gallery-next {
+                right: 10px;
+            }
+            .gallery-nav {
+                padding: 10px 15px;
+                font-size: 24px;
+            }
+        }
+    </style>
+</body>
+</html>

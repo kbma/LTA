@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= hotel.name %> - HotelDiscount</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .main-image {
+            grid-row: span 2;
+            height: 450px;
+        }
+
+        .main-image img,
+        .gallery-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-thumb {
+            height: 220px;
+        }
+
+        .gallery-thumb img {
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .gallery-thumb img:hover {
+            transform: scale(1.02);
+        }
+
+        .all-photos-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: white;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .image-container {
+            position: relative;
+        }
+
+        .hotel-info {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        .hotel-main {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        .hotel-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .hotel-title h1 {
+            font-size: 32px;
+            color: #333;
+        }
+
+        .stars {
+            color: #ffd700;
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        .hotel-address {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .hotel-address a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .hotel-description {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .amenities-section {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .amenities-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .amenities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .amenity-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .amenity-icon {
+            font-size: 20px;
+        }
+
+        .rooms-section h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .room-detail-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .room-detail-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
+        }
+
+        .room-detail-card.unavailable {
+            opacity: 0.6;
+            background: #f9f9f9;
+        }
+
+        .room-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .room-detail-title h4 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .room-detail-title p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .availability-badge {
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .availability-badge.available {
+            background: #e7f7ef;
+            color: #28a745;
+        }
+
+        .availability-badge.unavailable {
+            background: #fee;
+            color: #c33;
+        }
+
+        .room-amenities-list {
+            margin-bottom: 15px;
+        }
+
+        .room-amenities-list span {
+            display: inline-block;
+            background: #f0f4ff;
+            color: #667eea;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-right: 8px;
+            margin-bottom: 5px;
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 90px;
+        }
+
+        .booking-card h3 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .price-display {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .price-original {
+            color: #999;
+            text-decoration: line-through;
+            font-size: 16px;
+        }
+
+        .price-final {
+            color: #28a745;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .price-per-night {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .discount-badge {
+            background: #fff3cd;
+            color: #856404;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .book-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .book-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .book-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .booking-info {
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+        }
+
+        .map-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #eee;
+        }
+
+        .map-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .map-container {
+            height: 300px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #e8e8e8;
+        }
+
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .map-link {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .map-link:hover {
+            text-decoration: underline;
+        }
+
+        .quick-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quick-info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quick-info-icon {
+            font-size: 24px;
+        }
+
+        .reviews-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .reviews-section h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .reviews-summary {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .overall-rating {
+            text-align: center;
+        }
+
+        .overall-rating .score {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .rating-bars {
+            flex: 1;
+        }
+
+        .rating-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .rating-bar .stars {
+            width: 50px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .rating-bar .bar {
+            flex: 1;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .rating-bar .bar-fill {
+            height: 100%;
+            background: #28a745;
+        }
+
+        .rating-bar .percentage {
+            width: 40px;
+            font-size: 13px;
+            color: #666;
+            text-align: right;
+        }
+
+        .review-card {
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .reviewer-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reviewer-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .reviewer-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .reviewer-date {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .review-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #e7f7ef;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        .review-rating .score {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .review-title {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .review-content {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .review-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .review-actions button {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .review-actions button:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 1024px) {
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+
+            .main-image {
+                height: 300px;
+                grid-row: auto;
+            }
+
+            .hotel-info {
+                grid-template-columns: 1fr;
+            }
+
+            .booking-card {
+                position: static;
+            }
+
+            .reviews-summary {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <a href="/offers" class="back-btn">
+                ← Retour aux offres
+            </a>
+            <h1>HotelDiscount</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="gallery">
+            <div class="image-container main-image">
+                <img src="<%= hotel.image %>" alt="<%= hotel.name %>" id="mainImage">
+                <% if (hotel.gallery && hotel.gallery.length > 1) { %>
+                    <button class="all-photos-btn"><%= hotel.gallery.length %> photos</button>
+                <% } %>
+            </div>
+            <% if (hotel.gallery && hotel.gallery.length > 1) { %>
+                <% hotel.gallery.slice(1, 5).forEach(photo => { %>
+                    <div class="gallery-thumb">
+                        <img src="<%= photo %>" alt="Photo" onclick="changeImage(this.src)">
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="gallery-thumb">
+                    <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400" alt="Photo" onclick="changeImage(this.src)">
+                </div>
+                <div class="gallery-thumb">
+                    <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400" alt="Photo" onclick="changeImage(this.src)">
+                </div>
+                <div class="gallery-thumb">
+                    <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400" alt="Photo" onclick="changeImage(this.src)">
+                </div>
+                <div class="gallery-thumb">
+                    <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400" alt="Photo" onclick="changeImage(this.src)">
+                </div>
+            <% } %>
+        </div>
+
+        <div class="hotel-info">
+            <div class="hotel-main">
+                <div class="hotel-title">
+                    <h1><%= hotel.name %></h1>
+                </div>
+                
+                <div class="stars">
+                    <% for(let i = 0; i < hotel.stars; i++) { %>★<% } %>
+                </div>
+
+                <p class="hotel-address">
+                    📍 <%= hotel.address %>
+                    <% if (hotel.latitude && hotel.longitude) { %>
+                        | <a href="https://www.openstreetmap.org/?mlat=<%= hotel.latitude %>&mlon=<%= hotel.longitude %>#map=15/<%= hotel.latitude %>/<%= hotel.longitude %>" target="_blank">Voir sur OpenStreetMap</a>
+                    <% } %>
+                </p>
+
+                <p class="hotel-description">
+                    <%= hotel.description || 'Découvrez cet établissement exceptionnel où confort et élégance se rencontrent.' %>
+                </p>
+
+                <div class="amenities-section">
+                    <h3>Équipements et services</h3>
+                    <div class="amenities-grid">
+                        <% if (hotel.amenities && hotel.amenities.length > 0) { %>
+                            <% hotel.amenities.forEach(amenity => { %>
+                                <div class="amenity-item">
+                                    <span class="amenity-icon">✓</span>
+                                    <span><%= amenity %></span>
+                                </div>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="amenity-item"><span class="amenity-icon">✓</span><span>WiFi gratuit</span></div>
+                            <div class="amenity-item"><span class="amenity-icon">✓</span><span>Climatisation</span></div>
+                            <div class="amenity-item"><span class="amenity-icon">✓</span><span>Parking gratuit</span></div>
+                            <div class="amenity-item"><span class="amenity-icon">✓</span><span>Piscine</span></div>
+                            <div class="amenity-item"><span class="amenity-icon">✓</span><span>Restaurant</span></div>
+                            <div class="amenity-item"><span class="amenity-icon">✓</span><span>Bar</span></div>
+                            <div class="amenity-item"><span class="amenity-icon">✓</span><span>Spa</span></div>
+                            <div class="amenity-item"><span class="amenity-icon">✓</span><span>Salle de sport</span></div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="rooms-section">
+                    <h3>Nos chambres</h3>
+                    <% if (hotel.rooms && hotel.rooms.length > 0) { %>
+                        <% hotel.rooms.forEach(room => { %>
+                            <div class="room-detail-card <%= room.available ? '' : 'unavailable' %>">
+                                <div class="room-detail-header">
+                                    <div class="room-detail-title">
+                                        <h4><%= room.type %></h4>
+                                        <p><%= room.description %></p>
+                                    </div>
+                                    <span class="availability-badge <%= room.available ? 'available' : 'unavailable' %>">
+                                        <%= room.available ? '✓ Disponible' : '✗ Indisponible' %>
+                                    </span>
+                                </div>
+                                
+                                <div class="room-amenities-list">
+                                    <% if (room.amenities && room.amenities.length > 0) { %>
+                                        <% room.amenities.forEach(amenity => { %>
+                                            <span>• <%= amenity %></span>
+                                        <% }); %>
+                                    <% } %>
+                                </div>
+
+                                <% if (room.available) { %>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                                        <div>
+                                            <% if (room.originalPrice && room.originalPrice > room.price) { %>
+                                                <span class="price-original" style="margin-right: 10px;"><%= room.originalPrice.toFixed(2) %> DT</span>
+                                                <span class="price-final" style="font-size: 24px;"><%= room.price.toFixed(2) %> DT</span>
+                                            <% } else { %>
+                                                <span class="price-final" style="font-size: 24px;"><%= room.price.toFixed(2) %> DT</span>
+                                            <% } %>
+                                            <span class="price-per-night">par nuit</span>
+                                        </div>
+                                        <button class="book-btn" style="width: auto; padding: 10px 30px;" onclick="window.location.href='tel:26388202'">📞 Réserver: 26 388 202</button>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% }); %>
+                    <% } %>
+                </div>
+
+                <div class="map-section">
+                    <h3>📍 Localisation</h3>
+                    <div class="map-container">
+                        <% if (hotel.latitude && hotel.longitude) { %>
+                            <iframe 
+                                src="https://www.openstreetmap.org/export/embed.html?bbox=<%= hotel.longitude - 0.01 %>%2C<%= hotel.latitude - 0.01 %>%2C<%= Number(hotel.longitude) + 0.01 %>%2C<%= Number(hotel.latitude) + 0.01 %>%&layer=mapnik&marker=<%= hotel.latitude %>%2C<%= hotel.longitude %>"
+                                style="width: 100%; height: 100%; border: none;">
+                            </iframe>
+                            <a href="https://www.openstreetmap.org/?mlat=<%= hotel.latitude %>&mlon=<%= hotel.longitude %>#map=15/<%= hotel.latitude %>/<%= hotel.longitude %>" target="_blank" class="map-link">
+                                📍 Voir sur OpenStreetMap
+                            </a>
+                        <% } else { %>
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
+                                <p>📍 Carte non disponible</p>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="reviews-section">
+                    <h3>Avis et commentaires</h3>
+                    
+                    <div class="reviews-summary">
+                        <div class="overall-rating">
+                            <div class="score"><%= hotel.rating || 4.5 %></div>
+                            <div class="stars">
+                                <% for(let i = 0; i < Math.round(hotel.rating || 4.5); i++) { %>★<% } %>
+                            </div>
+                            <div style="color: #666; font-size: 14px;"><%= hotel.reviewCount || 127 %> avis</div>
+                        </div>
+                        <div class="rating-bars">
+                            <% [5, 4, 3, 2, 1].forEach(stars => { 
+                                const count = hotel.ratingDistribution ? hotel.ratingDistribution[stars] : (stars === 5 ? 65 : stars === 4 ? 35 : stars === 3 ? 15 : stars === 2 ? 8 : 4);
+                                const percentage = Math.round(count / (hotel.reviewCount || 127) * 100);
+                            %>
+                                <div class="rating-bar">
+                                    <span class="stars"><%= stars %> ★</span>
+                                    <div class="bar">
+                                        <div class="bar-fill" style="width: <%= percentage %>%;"></div>
+                                    </div>
+                                    <span class="percentage"><%= percentage %>%</span>
+                                </div>
+                            <% }); %>
+                        </div>
+                    </div>
+
+                    <div class="reviews-list">
+                        <% const reviews = hotel.reviews || [
+                            { author: 'Marie D.', date: 'Janvier 2025', rating: 5, title: 'Excellent séjour!', content: 'Chambre spacieuse et propre, personnel très accueillant.', helpful: 24 },
+                            { author: 'Ahmed B.', date: 'Décembre 2024', rating: 5, title: 'Parfait pour les familles', content: 'Nous avons passé un excellent séjour en famille.', helpful: 18 },
+                            { author: 'Sophie L.', date: 'Novembre 2024', rating: 4, title: 'Très bon rapport qualité-prix', content: 'Bon hôtel avec de belles prestations.', helpful: 12 }
+                        ]; %>
+                        
+                        <% reviews.forEach(review => { %>
+                            <div class="review-card">
+                                <div class="review-header">
+                                    <div class="reviewer-info">
+                                        <div class="reviewer-avatar"><%= review.author.charAt(0) %></div>
+                                        <div>
+                                            <div class="reviewer-name"><%= review.author %></div>
+                                            <div class="reviewer-date"><%= review.date %></div>
+                                        </div>
+                                    </div>
+                                    <div class="review-rating">
+                                        <span class="score"><%= review.rating %></span>
+                                        <span>★</span>
+                                    </div>
+                                </div>
+                                <h4 class="review-title"><%= review.title %></h4>
+                                <p class="review-content"><%= review.content %></p>
+                                <div class="review-actions">
+                                    <button>👍 Utile (<%= review.helpful %>)</button>
+                                    <button>🚩 Signaler</button>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-card">
+                <h3>Réserver maintenant</h3>
+                
+                <div class="price-display">
+                    <div class="price-final">
+                        <% if (hotel.rooms && hotel.rooms.length > 0) { %>
+                            <%= Math.min(...hotel.rooms.map(r => r.finalPrice || r.price)).toFixed(0) %> DT
+                        <% } else { %>
+                            250 DT
+                        <% } %>
+                    </div>
+                    <div class="price-per-night">par nuit</div>
+                    
+                    <% if (discountPercentage > 0) { %>
+                        <div class="discount-badge">
+                            🎉 <%= discountPercentage %>% de réduction appliquée !
+                        </div>
+                    <% } %>
+                </div>
+
+                <button class="book-btn" onclick="window.location.href='tel:26388202'">📞 Réserver: 26 388 202</button>
+                
+                <p class="booking-info">
+                    🔒 Réservation sécurisée<br>
+                    ✓ Annulation gratuite<br>
+                    ✓ Petit-déjeuner inclus
+                </p>
+
+                <div class="quick-info">
+                    <div class="quick-info-item">
+                        <span class="quick-info-icon">📅</span>
+                        <span>Arrivée: <%= checkIn || '15:00' %></span>
+                    </div>
+                    <div class="quick-info-item">
+                        <span class="quick-info-icon">📅</span>
+                        <span>Départ: <%= checkOut || '11:00' %></span>
+                    </div>
+                    <div class="quick-info-item">
+                        <span class="quick-info-icon">👥</span>
+                        <span><%= adults || 2 %> adulte(s)</span>
+                    </div>
+                    <div class="quick-info-item">
+                        <span class="quick-info-icon">🚪</span>
+                        <span><%= rooms || 1 %> chambre(s)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function changeImage(src) {
+            document.getElementById('mainImage').src = src;
+        }
+    </script>
+</body>
+</html>

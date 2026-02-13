@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accès aux offres - Code de réduction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 25px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .example-codes {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .example-codes code {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin: 3px;
+            display: inline-block;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .logo h1 {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>🏨 HotelDiscount</h1>
+            <p>Accédez à nos offres exclusives</p>
+        </div>
+
+        <% if (error) { %>
+            <div class="error">
+                <strong>❌ Erreur :</strong> <%= error %>
+            </div>
+        <% } %>
+
+        <form action="/validate-code" method="POST">
+            <div class="form-group">
+                <label for="code">Code de réduction</label>
+                <input 
+                    type="text" 
+                    id="code" 
+                    name="code" 
+                    placeholder="Entrez votre code"
+                    required
+                    autocomplete="off"
+                >
+            </div>
+
+            <button type="submit" class="btn">
+                Accéder aux offres →
+            </button>
+        </form>
+
+        <div class="info-box">
+            <h3>ℹ️ Comment obtenir un code ?</h3>
+            <p>Les codes de réduction sont fournis par votre organisation partenaire. Contactez votre administrateur pour obtenir votre code d'accès.</p>
+            
+            <div class="example-codes">
+                <strong>Codes de démonstration :</strong><br>
+                <code>SANTE2024</code>
+                <code>PARTNER15</code>
+                <code>PUBLIC25</code>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
