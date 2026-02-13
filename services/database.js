@@ -3,7 +3,9 @@ const path = require('path');
 require('dotenv').config();
 
 // Determine if we are using Postgres (Vercel) or local SQLite
-const isPostgres = !!process.env.POSTGRES_URL;
+// Neon and other providers might use DATABASE_URL
+const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+const isPostgres = !!connectionString;
 
 let dbInstance = null;
 let sqlJs = null;
@@ -22,7 +24,7 @@ async function initDatabase() {
   if (isPostgres) {
     const { Pool } = require('pg');
     dbInstance = new Pool({
-      connectionString: process.env.POSTGRES_URL,
+      connectionString: connectionString,
       ssl: {
         rejectUnauthorized: false
       }
