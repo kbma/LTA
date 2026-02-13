@@ -33,19 +33,24 @@ router.get('/login', (req, res) => {
 
 // Traitement de la connexion
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const dbWrapper = await getDb();
+  try {
+    const { username, password } = req.body;
+    const dbWrapper = await getDb();
 
-  const stmt = dbWrapper.prepare('SELECT * FROM admins WHERE username = ?');
-  const admin = await stmt.get(username);
+    const stmt = dbWrapper.prepare('SELECT * FROM admins WHERE username = ?');
+    const admin = await stmt.get(username);
 
-  if (!admin || !bcrypt.compareSync(password, admin.password)) {
-    return res.render('admin/login', { error: 'Identifiants incorrects' });
+    if (!admin || !bcrypt.compareSync(password, admin.password)) {
+      return res.render('admin/login', { error: 'Identifiants incorrects' });
+    }
+
+    req.session.adminId = admin.id;
+    req.session.adminUsername = admin.username;
+    res.redirect('/admin/dashboard');
+  } catch (error) {
+    console.error('Login error:', error);
+    res.render('admin/login', { error: 'Erreur de connexion base de données: ' + error.message });
   }
-
-  req.session.adminId = admin.id;
-  req.session.adminUsername = admin.username;
-  res.redirect('/admin/dashboard');
 });
 
 // Déconnexion admin
